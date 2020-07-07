@@ -19,3 +19,4 @@ Route::get('/', function () {
 
 Route::get('shashi','CompanyDataConrtoller@getHtlmData');
 Route::fallback('Controller@index');
+Route::post('websiteData', 'CompanyDataConrtoller@fatchData');

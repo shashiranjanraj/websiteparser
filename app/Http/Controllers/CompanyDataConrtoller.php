@@ -8,29 +8,40 @@ use voku\helper\HtmlDomParser as HelperHtmlDomParser;
 use App\Company;
 use App\Contact;
 use App\Director;
+use App\History;
+use Facade\FlareClient\Http\Response;
 use Illuminate\Support\Carbon;
 
 class CompanyDataConrtoller extends Controller
 {
-    //
-    /*
-        "State" => "West Bengal"
-  "District" => "Kolkata"
-  "City" => "Kolkata"
-  "PIN" => "700069"
-  "Section" => "Real estate activitiesSee other companies with same Real estate activities Section"
-  "Division" => "Veterinary activitiesSee other companies with same Veterinary activities Division"
-  "MainGroup" => "NoneSee other companies with same None Group"
-  "MainClass" => "None"
-]
-    */
-    public function getHtlmData()
+
+
+ public function fatchData(Request $request)
+ {  
+    $url = $request->post('urlinput');
+    
+    if(!filter_var($url, FILTER_VALIDATE_URL)){
+        return response()->json(['massage'=>'Not a vailid Json']);
+    }
+   
+    $website = Http::get($url);
+    $dom = HelperHtmlDomParser::str_get_html($website->body());
+
+    $history  = new History;
+
+    $history->url = $url;
+    $history->response = $dom;
+    $history->header = json_encode($website->headers());
+    $history->save();
+
+    $this->getHtlmData($dom);
+     # code...
+ }
+
+    private function getHtlmData($dom)
     {
 
-        $website = Http::get('http://www.mycorporateinfo.com/business/kamdhenu-engineering-industries-ltd');
-
         
-        $dom = HelperHtmlDomParser::str_get_html($website->body());
         
         // company data
         $companyArrya  = $this->getpareseContainBySelector($dom,'#companyinformation .table tr');
@@ -60,35 +71,35 @@ class CompanyDataConrtoller extends Controller
 
         $contact = new Contact;    
 
-        $contact->email = trim(str_replace('&nbsp;','',$contactArray['EmailAddress']));
-        $contact->address = trim(str_replace('&nbsp;','',$contactArray['RegisteredOffice']));
+       $contact->email = trim(str_replace('&nbsp;','',$contactArray['EmailAddress']??null));
+       $contact->address = trim(str_replace('&nbsp;','',$contactArray['RegisteredOffice']??null));
        $company = new Company;
-       $company->cin = trim($companyArrya['CorporateIdentificationNumber']);
-       $company->name = trim($companyArrya['CompanyName']);
-       $company->status = trim($companyArrya['CompanyStatus']);
-       $company->age = trim($companyArrya['AgeDateofIncorporation']);
-       $company->registration_number = trim($companyArrya['RegistrationNumber']);
-       $company->category = trim($companyArrya['CompanyCategory']);
-       $company->class =  trim($company['ClassofCompany']);
-       $company->Roc_code = trim($company['ROCCode']);
-       $company->is_listed = trim($liting['Whetherlistedornot']);
-       $company->state  = trim($other['State']);
-       $company->pin = trim($other['PIN']);
-       $company->district = trim($other['District']);
-       $company->city = trim($other['City']);
-       $company->section = trim($other['Section']);
-       $company->divison = trim($other['Division']);
-       $company->main_group = trim($other['MainGroup']);
-       $company->main_class = trim($other['MainClass']);
+       $company->cin = trim($companyArrya['CorporateIdentificationNumber']??null);
+       $company->name = trim($companyArrya['CompanyName']??null);
+       $company->status = trim($companyArrya['CompanyStatus']??null);
+       $company->age = trim($companyArrya['AgeDateofIncorporation']??null);
+       $company->registration_number = trim($companyArrya['RegistrationNumber']??null);
+       $company->category = trim($companyArrya['CompanyCategory']??null);
+       $company->class =  trim($company['ClassofCompany']??null);
+       $company->Roc_code = trim($company['ROCCode']??null);
+       $company->is_listed = trim($liting['Whetherlistedornot']??null);
+       $company->state  = trim($other['State']??null);
+       $company->pin = trim($other['PIN']??null);
+       $company->district = trim($other['District']??null);
+       $company->city = trim($other['City']??null);
+       $company->section = trim($other['Section']??null);
+       $company->divison = trim($other['Division']??null);
+       $company->main_group = trim($other['MainGroup']??null);
+       $company->main_class = trim($other['MainClass']??null);
 
-       $company->last_agm = Carbon::createFromFormat('d-m-Y',trim($liting['DateofLastAGM']))->format('Y-m-d');
-       $company->last_balance_sheet = Carbon::createFromFormat('d-m-Y',trim($liting['DateofBalancesheet']))->format('Y-m-d');
-       $company->numbers_of_memmber = trim($company['NumberofMembersApplicableonlyincaseofcompanywithoutShareCapital']);
+       $company->last_agm = Carbon::createFromFormat('d-m-Y',trim($liting['DateofLastAGM']))->format('Y-m-d'??null);
+       $company->last_balance_sheet = Carbon::createFromFormat('d-m-Y',trim($liting['DateofBalancesheet']))->format('Y-m-d'??null);
+       $company->numbers_of_memmber = trim($company['NumberofMembersApplicableonlyincaseofcompanywithoutShareCapital']??null);
        $company->save();
        $company->contact()->save($contact);
        $company->directors()->saveMany($directorsmany);
       
-       echo "done!";
+        return response()->json(['message'=>'Data inserted Sucessfully']);
         
     }
 private function getpareseContainBySelector($domobject, $selector){

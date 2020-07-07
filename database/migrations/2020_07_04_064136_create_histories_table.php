@@ -14,7 +14,10 @@ class CreateHistoriesTable extends Migration
     public function up()
     {
         Schema::create('histories', function (Blueprint $table) {
-            $table->id();
+            $table->increments('id');
+            $table->string('url');
+            $table->mediumText('response');
+            $table->string('header');
             $table->timestamps();
         });
     }
